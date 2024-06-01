@@ -1,14 +1,33 @@
 #include <mpi.h>
 #include <thread>
 #include <iostream>
+#include <queue>
+#include <vector>
 
 using namespace std;
 
-void firstThread(){
+class WorldState{
+	public:
+	int T, K;
+	priority_queue<int> glasshouse_queue;
+	vector<priority_queue<int>> reed_queues;
+	vector<int> cocoons;
+
+	WorldState(int T, int K){
+		this->T = T;
+		this->K = K;
+		for(int i=0;i<T;i++){
+			reed_queues.push_back(priority_queue<int>());
+			cocoons.push_back(0);
+		}
+	}
+};
+
+void firstThread(WorldState* world_state){
 	cout<<"first thread\n";
 }
 
-void secondThread(){
+void secondThread(WorldState* world_state){
 	cout<<"second thread\n";
 }
 
@@ -34,9 +53,10 @@ int main(int argc, char** argv){
 	// number of flowers
 	int K = std::atoi(argv[2]);
 
+	WorldState world_state(T,K);
 
-	thread first(firstThread);
-	thread second(secondThread);
+	thread first(firstThread, &world_state);
+	thread second(secondThread, &world_state);
 
 	first.join();
 	second.join();
