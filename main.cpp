@@ -1,7 +1,7 @@
-#include <mpi.h>
 #include <thread>
 #include <iostream>
 #include "WorldState.hpp"
+#include "Message.hpp"
 
 using namespace std;
 
@@ -35,6 +35,9 @@ int main(int argc, char** argv){
 	// number of flowers
 	int K = std::atoi(argv[2]);
 
+	MPI_Datatype mpi_struct;
+	createMPIType(mpi_struct);
+
 	WorldState world_state(T,K);
 
 	thread first(firstThread, &world_state);
@@ -43,5 +46,6 @@ int main(int argc, char** argv){
 	first.join();
 	second.join();
 
+	MPI_Type_free(&mpi_struct);
 	MPI_Finalize();
 }
