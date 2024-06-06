@@ -5,17 +5,52 @@
 
 using namespace std;
 
-void firstThread(WorldState* world_state){
-	cout<<"first thread\n";
+// TODO define other types
+#define MSG_TYPE_SELECT_REED 0
+
+int selectReed(){
+	// TODO select random free reed or return -1
+	return 1;
 }
 
-void secondThread(WorldState* world_state){
-	cout<<"second thread\n";
+void firstThread(WorldState* worldState, MessageHandler* messageHandler){
+	while(worldState->alive){
+
+		// select reed
+		int selected_reed = selectReed();
+		if(selected_reed < 0){
+			// TODO wait for message
+			continue;
+		}
+
+		// send message about selected reed to all processes
+		for(int i=0;i<worldState->P;i++)
+			messageHandler->sendMessage(worldState->id, worldState->timestamp, MSG_TYPE_SELECT_REED, selected_reed, i);
+
+		// TODO finish the algorithm
+	}
+
+}
+
+void secondThread(WorldState* worldState, MessageHandler* messageHandler){
+	while(worldState->alive){
+		Message m = messageHandler->receiveMessage();
+		// TODO handle messages
+		switch(m.type){
+			case MSG_TYPE_SELECT_REED:
+				cout<<m.sender<<"\n";
+		}
+	}
 }
 
 
 int main(int argc, char** argv){
-	MPI_Init(&argc, &argv);
+	int provided;
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+	if (provided < MPI_THREAD_MULTIPLE) {
+		cout << "Error: thread support not provided\n";
+		MPI_Finalize();
+	}
 
 	int process_id, number_of_processes;
 	MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
@@ -37,10 +72,10 @@ int main(int argc, char** argv){
 
 	MessageHandler messageHandler;
 
-	WorldState world_state(T,K);
-
-	thread first(firstThread, &world_state);
-	thread second(secondThread, &world_state);
+	WorldState worldState(process_id, P,T,K);
+	
+	thread first(firstThread, &worldState, &messageHandler);
+	thread second(secondThread, &worldState, &messageHandler);
 
 	first.join();
 	second.join();
