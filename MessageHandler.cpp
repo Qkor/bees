@@ -13,18 +13,18 @@ MessageHandler::MessageHandler() {
 	MPI_Type_commit(&mpi_struct);
 }
 
-void MessageHandler::sendMessage(int sender, int timestamp, int type, int data, int dest){
+void MessageHandler::sendMessage(int sender, int timestamp, int type, int data, int dest, int tag){
 	Message m;
 	m.sender = sender;
 	m.timestamp = timestamp;
 	m.type = type;
 	m.data = data;
-	MPI_Send(&m, 1, mpi_struct, dest, 0, MPI_COMM_WORLD);
+	MPI_Send(&m, 1, mpi_struct, dest, tag, MPI_COMM_WORLD);
 }
 
-Message MessageHandler::receiveMessage(){
+Message MessageHandler::receiveMessage(int tag){
 	Message m;
-	MPI_Recv(&m, 1, mpi_struct, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	MPI_Recv(&m, 1, mpi_struct, MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	return m;
 }
 

@@ -25,7 +25,12 @@ void firstThread(WorldState* worldState, MessageHandler* messageHandler){
 
 		// send message about selected reed to all processes
 		for(int i=0;i<worldState->P;i++)
-			messageHandler->sendMessage(worldState->id, worldState->timestamp, MSG_TYPE_SELECT_REED, selected_reed, i);
+			messageHandler->sendMessage(worldState->id, worldState->timestamp, MSG_TYPE_SELECT_REED, selected_reed, i, 0);
+
+		// get responses from other processes
+		for(int i=0;i<worldState->P;i++){
+			Message m = messageHandler->receiveMessage(1);
+		}
 
 		// TODO finish the algorithm
 	}

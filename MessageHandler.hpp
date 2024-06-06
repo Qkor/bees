@@ -13,7 +13,7 @@ class MessageHandler{
 	public:
 	MessageHandler();
 	~MessageHandler();
-	void sendMessage(int sender, int timestamp, int type, int data, int dest);
-	Message receiveMessage();
+	void sendMessage(int sender, int timestamp, int type, int data, int dest, int tag=0);
+	Message receiveMessage(int tag=0);
 };
 
