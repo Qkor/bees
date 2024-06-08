@@ -13,14 +13,22 @@ void firstThread(Bee* bee){
 			bee->selectReed();
 		}while(bee->selected_reed == -1);
 		// cout<<"Bee "<<bee->id<<" selected reed "<<bee->selected_reed<<"\n";
+		
 		bee->requestReed();
 		cout<<"Bee "<<bee->id<<" requested reed "<<bee->selected_reed<<"\n";
-		while(!bee->canAccessReed()){
-			if(bee->worldState->reed_queues[1].empty()) continue;
-			sleep(1);
-		}
+		while(!bee->canAccessReed()) sleep(0.1); // wait until reed is free
 		cout<<"Bee "<<bee->id<<" accessed reed "<<bee->selected_reed<<"\n";
-		sleep(1); // critical section
+		
+		while(1){
+			bee->requestGlasshouse();
+			while(!bee->canAccessGlasshouse()) sleep(0.1); // wait until glasshouse is free
+			cout<<"Bee "<<bee->id<<" accessed glasshouse\n";
+			sleep(1);
+			cout<<"Bee "<<bee->id<<" left glasshouse\n";
+			bee->releaseGlasshouse();
+		}
+
+
 		cout<<"Bee "<<bee->id<<" left reed "<<bee->selected_reed<<"\n";
 		bee->releaseReed();
 	}

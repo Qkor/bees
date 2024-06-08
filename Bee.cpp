@@ -43,13 +43,37 @@ bool Bee::requestReed(){
 		messageHandler->sendMessage(id,request_timestamp,MSG_TYPE_REED_REQUEST,selected_reed,i,MSG_TAG_REQUEST);
 	}
 
-	bool canAccessReed = true;
+	bool canAccess = true;
 	for(int i=0;i<worldState->P;i++){
 		if(i==id) continue;
 		Message m = messageHandler->receiveMessage(MSG_TAG_REPLY);
-		if(m.timestamp <= request_timestamp) canAccessReed = false;
+		if(m.timestamp <= request_timestamp) canAccess = false;
 	}
-	return canAccessReed;
+	return canAccess;
+}
+
+bool Bee::requestGlasshouse(){
+	mtx.lock();
+	timestamp++;
+	int request_timestamp = timestamp;
+	std::pair<int,int> request;
+	request.first = request_timestamp;
+	request.second = id;
+	worldState->glasshouse_queue.push(request);
+	mtx.unlock();
+
+	for(int i=0;i<worldState->P;i++){
+		if(i==id) continue;
+		messageHandler->sendMessage(id,request_timestamp,MSG_TYPE_GLASSHOUSE_REQUEST,0,i,MSG_TAG_REQUEST);
+	}
+
+	bool canAccess = true;
+	for(int i=0;i<worldState->P;i++){
+		if(i==id) continue;
+		Message m = messageHandler->receiveMessage(MSG_TAG_REPLY);
+		if(m.timestamp <= request_timestamp) canAccess = false;
+	}
+	return canAccess;
 }
 
 void Bee::handleRequests(){
@@ -66,6 +90,13 @@ void Bee::handleRequests(){
 			break;
 		case MSG_TYPE_REED_RELEASE:
 			worldState->reed_queues[m.data].pop();
+			break;
+		case MSG_TYPE_GLASSHOUSE_REQUEST:
+			messageHandler->sendMessage(id,timestamp,MSG_TYPE_GLASSHOUSE_REPLY,0,m.sender,MSG_TAG_REPLY);
+			worldState->glasshouse_queue.push(request);
+			break;
+		case MSG_TYPE_GLASSHOUSE_RELEASE:
+			worldState->glasshouse_queue.pop();
 			break;
 	}
 	mtx.unlock();
@@ -87,9 +118,29 @@ void Bee::releaseReed(){
 	reed_acquired = false;
 }
 
+void Bee::releaseGlasshouse(){
+	mtx.lock();
+	timestamp++;
+	int request_timestamp = timestamp;
+	worldState->glasshouse_queue.pop();
+	mtx.unlock();
+
+	for(int i=0;i<worldState->P;i++){
+		if(i==id) continue;
+		messageHandler->sendMessage(id,request_timestamp,MSG_TYPE_GLASSHOUSE_RELEASE,selected_reed,i,MSG_TAG_REQUEST);
+	}
+}
+
 bool Bee::canAccessReed(){
 	mtx.lock();
 	bool canAccess = !(worldState->reed_queues[selected_reed].empty()) && worldState->reed_queues[selected_reed].top().second == id;
+	mtx.unlock();
+	return canAccess;
+}
+
+bool Bee::canAccessGlasshouse(){
+	mtx.lock();
+	bool canAccess = !(worldState->glasshouse_queue.empty()) && worldState->glasshouse_queue.top().second == id;
 	mtx.unlock();
 	return canAccess;
 }
