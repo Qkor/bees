@@ -3,73 +3,33 @@
 #include <unistd.h> 
 #include "WorldState.hpp"
 #include "MessageHandler.hpp"
+#include "Bee.hpp"
 
 using namespace std;
 
-// TODO define other types
-#define MSG_TYPE_SELECT_REED 0
-#define MSG_TYPE_ACK 1
-#define MSG_TYPE_DENY 2
-
-int selectReed(){
-	// TODO select random free reed or return -1
-	return 1;
-}
-
-void firstThread(WorldState* worldState, MessageHandler* messageHandler){
-	while(worldState->alive){
-
-		// select reed
-		worldState->selected_reed = selectReed();
-		if(worldState->selected_reed < 0){
-			// TODO wait for message
-			continue;
-		}
-
-		// send message about selected reed to all processes
-		for(int i=0;i<worldState->P;i++)
-			messageHandler->sendMessage(worldState->id, worldState->timestamp, MSG_TYPE_SELECT_REED, worldState->selected_reed, i, 0);
-
-
-		// TODO implement accessing critical section and updating timestamps (it doesnt work correctly now)
-		// get responses from other processes
-		bool canAccessReed = true;
-		for(int i=0;i<worldState->P;i++){
-			Message m = messageHandler->receiveMessage(1);
-			if(m.type == MSG_TYPE_DENY)
-				canAccessReed = false;
-		}
-
-		// accessing reed
-		if(canAccessReed){
-			worldState->reed_acquired = true;
-			cout<<"Bee "<<worldState->id<<" accessed reed "<<worldState->selected_reed<<"\n";
-			// while(worldState->eggs<5){
-			// 	// TODO implement accessing glasshouse queue
-			// }
+void firstThread(Bee* bee){
+	while(bee->alive){
+		do{
+			bee->selectReed();
+		}while(bee->selected_reed == -1);
+		// cout<<"Bee "<<bee->id<<" selected reed "<<bee->selected_reed<<"\n";
+		bee->requestReed();
+		cout<<"Bee "<<bee->id<<" requested reed "<<bee->selected_reed<<"\n";
+		while(!bee->canAccessReed()){
+			if(bee->worldState->reed_queues[1].empty()) continue;
+			// cout<<bee->id<<" says "<<bee->worldState->reed_queues[1].top().second<<"\n";
 			sleep(1);
-			cout<<"Bee "<<worldState->id<<" left reed "<<worldState->selected_reed<<"\n";
 		}
-
-		// leaving reed
-		worldState->reed_acquired = false;
-		worldState->selected_reed = -1;
-		sleep(1);
-
+		cout<<"Bee "<<bee->id<<" accessed reed "<<bee->selected_reed<<"\n";
+		sleep(1); // critical section
+		cout<<"Bee "<<bee->id<<" left reed "<<bee->selected_reed<<"\n";
+		bee->releaseReed();
 	}
 }
 
-void secondThread(WorldState* worldState, MessageHandler* messageHandler){
-	while(worldState->alive){
-		Message m = messageHandler->receiveMessage();
-		// TODO handle messages
-		switch(m.type){
-			case MSG_TYPE_SELECT_REED:
-				if((worldState->selected_reed == m.data) && (worldState->reed_acquired || (worldState->timestamp < m.timestamp) || (worldState->timestamp == m.timestamp && worldState->id < m.sender)))
-					messageHandler->sendMessage(worldState->id, worldState->timestamp, MSG_TYPE_DENY, 0, m.sender, 1);
-				else
-					messageHandler->sendMessage(worldState->id, worldState->timestamp, MSG_TYPE_ACK, 0, m.sender, 1);
-		}
+void secondThread(Bee* bee){
+	while(bee->alive){
+		bee->handleRequests();
 	}
 }
 
@@ -101,11 +61,11 @@ int main(int argc, char** argv){
 	int K = std::atoi(argv[2]);
 
 	MessageHandler messageHandler;
-
-	WorldState worldState(process_id, P,T,K);
+	WorldState worldState(P,T,K);
+	Bee bee(process_id, &worldState, &messageHandler);
 	
-	thread first(firstThread, &worldState, &messageHandler);
-	thread second(secondThread, &worldState, &messageHandler);
+	thread first(firstThread, &bee);
+	thread second(secondThread, &bee);
 
 	first.join();
 	second.join();

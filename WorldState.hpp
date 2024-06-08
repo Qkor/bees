@@ -1,21 +1,22 @@
 #pragma once
 #include <queue>
 #include <vector>
+#include <utility>
 
 using namespace std;
 
+struct comparePairs {
+    bool operator()(const std::pair<int, int>& a, const std::pair<int, int>& b) {
+        return (a.first > b.first) || ((a.first == b.first) && (a.second > b.second));
+    }
+};
+
 class WorldState{
 	public:
-	bool alive;
 	int P, T, K;
-	int timestamp;
-	int id;
-	int selected_reed;
-	bool reed_acquired;
-	int eggs = 0;
-	priority_queue<int> glasshouse_queue;
-	vector<priority_queue<int>> reed_queues;
+	priority_queue<pair<int, int>, vector<pair<int, int>>, comparePairs> glasshouse_queue;
+	vector<priority_queue<pair<int, int>, vector<pair<int, int>>, comparePairs>> reed_queues;
 	vector<int> cocoons;
 
-	WorldState(int id, int P, int T, int K);
+	WorldState(int P, int T, int K);
 };
