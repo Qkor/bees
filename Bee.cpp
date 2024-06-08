@@ -5,6 +5,7 @@ Bee::Bee(int id, WorldState* worldState, MessageHandler* messageHandler){
 	this->worldState = worldState;
 	this->messageHandler = messageHandler;
 	alive = true;
+	eggs = 0;
 	timestamp = 0;
 	selected_reed = -1;
 	reed_acquired = false;
@@ -143,4 +144,9 @@ bool Bee::canAccessGlasshouse(){
 	bool canAccess = !(worldState->glasshouse_queue.empty()) && worldState->glasshouse_queue.top().second == id;
 	mtx.unlock();
 	return canAccess;
+}
+
+void Bee::layEgg(){
+	eggs++;
+	if(eggs >= 5) alive = false;
 }

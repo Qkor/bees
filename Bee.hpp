@@ -34,4 +34,5 @@ class Bee{
 	void handleRequests();
 	void releaseReed();
 	void releaseGlasshouse();
+	void layEgg();
 };

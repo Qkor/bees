@@ -19,23 +19,26 @@ void firstThread(Bee* bee){
 		while(!bee->canAccessReed()) sleep(0.1); // wait until reed is free
 		cout<<"Bee "<<bee->id<<" accessed reed "<<bee->selected_reed<<"\n";
 		
-		while(1){
+		while(bee->alive){
 			bee->requestGlasshouse();
 			while(!bee->canAccessGlasshouse()) sleep(0.1); // wait until glasshouse is free
 			cout<<"Bee "<<bee->id<<" accessed glasshouse\n";
 			sleep(1);
 			cout<<"Bee "<<bee->id<<" left glasshouse\n";
 			bee->releaseGlasshouse();
-		}
 
+			bee->layEgg();
+			cout<<"Bee "<<bee->id<<" layed "<<bee->eggs<<" egg\n";
+		}
 
 		cout<<"Bee "<<bee->id<<" left reed "<<bee->selected_reed<<"\n";
 		bee->releaseReed();
 	}
+	cout<<"Bee "<<bee->id<<" died\n";
 }
 
 void secondThread(Bee* bee){
-	while(bee->alive){
+	while(1){
 		bee->handleRequests();
 	}
 }
