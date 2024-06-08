@@ -17,7 +17,6 @@ void firstThread(Bee* bee){
 		cout<<"Bee "<<bee->id<<" requested reed "<<bee->selected_reed<<"\n";
 		while(!bee->canAccessReed()){
 			if(bee->worldState->reed_queues[1].empty()) continue;
-			// cout<<bee->id<<" says "<<bee->worldState->reed_queues[1].top().second<<"\n";
 			sleep(1);
 		}
 		cout<<"Bee "<<bee->id<<" accessed reed "<<bee->selected_reed<<"\n";
