@@ -11,10 +11,11 @@ void firstThread(Bee* bee){
 	while(bee->alive){
 		do{
 			bee->selectReed();
+			if (bee->requestReed()) break; // request only if reed queue size is smaller than number of available spots for cocons
 		}while(bee->selected_reed == -1);
+
 		// cout<<"Bee "<<bee->id<<" selected reed "<<bee->selected_reed<<"\n";
 		
-		bee->requestReed();
 		cout<<"Bee "<<bee->id<<" requested reed "<<bee->selected_reed<<"\n";
 		while(!bee->canAccessReed()) sleep(0.1); // wait until reed is free
 		cout<<"Bee "<<bee->id<<" accessed reed "<<bee->selected_reed<<"\n";
@@ -26,7 +27,7 @@ void firstThread(Bee* bee){
 			sleep(1);
 			cout<<"Bee "<<bee->id<<" left glasshouse\n";
 			bee->releaseGlasshouse();
-
+			cout<<"There were already "<<bee->worldState->cocoons[bee->selected_reed]<<" bees in reed "<<bee->selected_reed<<endl;
 			bee->layEgg();
 			cout<<"Bee "<<bee->id<<" layed "<<bee->eggs<<" egg\n";
 		}

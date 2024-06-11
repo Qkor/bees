@@ -33,6 +33,7 @@ int Bee::selectReed(){
 }
 
 bool Bee::requestReed(){
+	if (worldState->reed_queues[selected_reed].size() > (15-worldState->cocoons[selected_reed])) return false;
 	mtx.lock();
 	timestamp++;
 	int request_timestamp = timestamp;
@@ -53,6 +54,8 @@ bool Bee::requestReed(){
 		Message m = messageHandler->receiveMessage(MSG_TAG_REPLY);
 		if(m.timestamp <= request_timestamp) canAccess = false;
 	}
+
+
 	return canAccess;
 }
 
@@ -94,6 +97,7 @@ void Bee::handleRequests(){
 			break;
 		case MSG_TYPE_REED_RELEASE:
 			worldState->reed_queues[m.data].pop();
+			worldState->cocoons[m.data]++;
 			break;
 		case MSG_TYPE_GLASSHOUSE_REQUEST:
 			messageHandler->sendMessage(id,timestamp,MSG_TYPE_GLASSHOUSE_REPLY,0,m.sender,MSG_TAG_REPLY);
@@ -117,6 +121,7 @@ void Bee::releaseReed(){
 		if(i==id) continue;
 		messageHandler->sendMessage(id,request_timestamp,MSG_TYPE_REED_RELEASE,selected_reed,i,MSG_TAG_REQUEST);
 	}
+	worldState->cocoons[selected_reed]++;
 
 	selected_reed = -1;
 	reed_acquired = false;
