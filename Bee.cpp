@@ -7,7 +7,6 @@ Bee::Bee(int id, WorldState* worldState, MessageHandler* messageHandler){
 	alive = true;
 	eggs = 0;
 	selected_reed = -1;
-	reed_acquired = false;
 	std::random_device rd; 
 	std::mt19937 gen(rd()); 
 	std::uniform_int_distribution<> distr(0, 15);  
@@ -134,7 +133,6 @@ void Bee::releaseReed(){
 	}
 
 	selected_reed = -1;
-	reed_acquired = false;
 }
 
 void Bee::releaseGlasshouse(){

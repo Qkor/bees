@@ -23,7 +23,6 @@ class Bee{
 	int id;
 	bool alive;
 	int selected_reed;
-	bool reed_acquired;
 	int eggs;
 	Bee(int id, WorldState* worldState, MessageHandler* messageHandler);
 	int selectReed();
