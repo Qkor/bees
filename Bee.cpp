@@ -162,12 +162,22 @@ bool Bee::canAccessReed(){
 
 bool Bee::canAccessGlasshouse(){
 	mtx.lock();
-	bool canAccess = !worldState->glasshouse_queue.empty() && worldState->glasshouse_queue.begin()->second == id;
+	bool canAccess = false;
+	if(!worldState->glasshouse_queue.empty()){
+		int i=0;
+		for (auto it = worldState->glasshouse_queue.begin(); it != worldState->glasshouse_queue.end();++it){
+			if (it->second == id){
+				canAccess = true;
+				break;
+			}
+			if(++i >= worldState->K)
+				break;
+		}
+	}
 	mtx.unlock();
 	return canAccess;
 }
 
 void Bee::layEgg(){
-	eggs++;
-	if(eggs >= 5) alive = false;
+	if(++eggs >= 5) alive = false;
 }
