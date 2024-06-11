@@ -7,7 +7,6 @@ Bee::Bee(int id, WorldState* worldState, MessageHandler* messageHandler){
 	alive = true;
 	eggs = 0;
 	selected_reed = -1;
-	reed_acquired = false;
 	std::random_device rd; 
 	std::mt19937 gen(rd()); 
 	std::uniform_int_distribution<> distr(0, 15);  
@@ -40,7 +39,7 @@ bool Bee::requestReed(){
 	std::pair<int,int> request;
 	request.first = request_timestamp;
 	request.second = id;
-	worldState->reed_queues[selected_reed].push(request);
+	worldState->reed_queues[selected_reed].insert(request);
 	mtx.unlock();
 
 	for(int i=0;i<worldState->P;i++){
@@ -66,7 +65,7 @@ bool Bee::requestGlasshouse(){
 	std::pair<int,int> request;
 	request.first = request_timestamp;
 	request.second = id;
-	worldState->glasshouse_queue.push(request);
+	worldState->glasshouse_queue.insert(request);
 	mtx.unlock();
 
 	for(int i=0;i<worldState->P;i++){
@@ -93,18 +92,28 @@ void Bee::handleRequests(){
 	switch(m.type){
 		case MSG_TYPE_REED_REQUEST:
 			messageHandler->sendMessage(id,timestamp,MSG_TYPE_REED_REPLY,m.data,m.sender,MSG_TAG_REPLY);
-			worldState->reed_queues[m.data].push(request);
+			worldState->reed_queues[m.data].insert(request);
 			break;
 		case MSG_TYPE_REED_RELEASE:
-			worldState->reed_queues[m.data].pop();
 			worldState->cocoons[m.data]++;
+			for (auto it = worldState->reed_queues[m.data].begin(); it != worldState->reed_queues[m.data].end();++it){
+				if (it->second == m.sender){
+					worldState->reed_queues[m.data].erase(it);
+					break;
+				}
+			}
 			break;
 		case MSG_TYPE_GLASSHOUSE_REQUEST:
 			messageHandler->sendMessage(id,timestamp,MSG_TYPE_GLASSHOUSE_REPLY,0,m.sender,MSG_TAG_REPLY);
-			worldState->glasshouse_queue.push(request);
+			worldState->glasshouse_queue.insert(request);
 			break;
 		case MSG_TYPE_GLASSHOUSE_RELEASE:
-			worldState->glasshouse_queue.pop();
+			for (auto it = worldState->glasshouse_queue.begin(); it != worldState->glasshouse_queue.end();++it){
+				if (it->second == m.sender){
+					worldState->glasshouse_queue.erase(it);
+					break;
+				}
+			}
 			break;
 	}
 	mtx.unlock();
@@ -114,7 +123,12 @@ void Bee::releaseReed(){
 	mtx.lock();
 	timestamp++;
 	int request_timestamp = timestamp;
-	worldState->reed_queues[selected_reed].pop();
+	for (auto it = worldState->reed_queues[selected_reed].begin(); it != worldState->reed_queues[selected_reed].end();++it){
+		if (it->second == id){
+			worldState->reed_queues[selected_reed].erase(it);
+			break;
+		}
+	}
 	mtx.unlock();
 
 	for(int i=0;i<worldState->P;i++){
@@ -124,14 +138,18 @@ void Bee::releaseReed(){
 	worldState->cocoons[selected_reed]++;
 
 	selected_reed = -1;
-	reed_acquired = false;
 }
 
 void Bee::releaseGlasshouse(){
 	mtx.lock();
 	timestamp++;
 	int request_timestamp = timestamp;
-	worldState->glasshouse_queue.pop();
+	for (auto it = worldState->glasshouse_queue.begin(); it != worldState->glasshouse_queue.end();++it){
+		if (it->second == id){
+			worldState->glasshouse_queue.erase(it);
+			break;
+		}
+	}
 	mtx.unlock();
 
 	for(int i=0;i<worldState->P;i++){
@@ -142,19 +160,29 @@ void Bee::releaseGlasshouse(){
 
 bool Bee::canAccessReed(){
 	mtx.lock();
-	bool canAccess = !(worldState->reed_queues[selected_reed].empty()) && worldState->reed_queues[selected_reed].top().second == id;
+	bool canAccess = !worldState->reed_queues[selected_reed].empty() && worldState->reed_queues[selected_reed].begin()->second == id;
 	mtx.unlock();
 	return canAccess;
 }
 
 bool Bee::canAccessGlasshouse(){
 	mtx.lock();
-	bool canAccess = !(worldState->glasshouse_queue.empty()) && worldState->glasshouse_queue.top().second == id;
+	bool canAccess = false;
+	if(!worldState->glasshouse_queue.empty()){
+		int i=0;
+		for (auto it = worldState->glasshouse_queue.begin(); it != worldState->glasshouse_queue.end();++it){
+			if (it->second == id){
+				canAccess = true;
+				break;
+			}
+			if(++i >= worldState->K)
+				break;
+		}
+	}
 	mtx.unlock();
 	return canAccess;
 }
 
 void Bee::layEgg(){
-	eggs++;
-	if(eggs >= 5) alive = false;
+	if(++eggs >= 5) alive = false;
 }

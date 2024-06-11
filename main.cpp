@@ -19,7 +19,6 @@ void firstThread(Bee* bee){
 		cout<<"Bee "<<bee->id<<" requested reed "<<bee->selected_reed<<"\n";
 		while(!bee->canAccessReed()) sleep(0.1); // wait until reed is free
 		cout<<"Bee "<<bee->id<<" accessed reed "<<bee->selected_reed<<"\n";
-		
 		while(bee->alive){
 			bee->requestGlasshouse();
 			while(!bee->canAccessGlasshouse()) sleep(0.1); // wait until glasshouse is free
